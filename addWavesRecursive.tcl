@@ -146,10 +146,10 @@ set dmt [ gtkwave::getDumpType ]
 # doesn't appear to have much effect on GTKWave. Generally, GTKWave
 # will just ignore things it doesn't understand. Nevertheless, we
 # default to using a coment syntax of "[*]":
-puts "\[*\] number of signals in dumpfile '$dumpname' of type $dmt: $nfacs"
-puts "\[dumpfile\] \"[file join [pwd] $dumpname]\""
-puts "\[dumpfile_size\] [file size [file join [pwd] $dumpname]]"
-puts "\[optimize_vcd\]"
+# puts "\[*\] number of signals in dumpfile '$dumpname' of type $dmt: $nfacs"
+# puts "\[dumpfile\] \"[file join [pwd] $dumpname]\""
+# puts "\[dumpfile_size\] [file size [file join [pwd] $dumpname]]"
+# puts "\[optimize_vcd\]"
 # A .gtkw file has some additional meta information which we're not
 # using:
 # puts "\[savefile\]"
