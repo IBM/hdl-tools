@@ -212,12 +212,27 @@ puts "\[sst_expanded\] 0"
 # and the end of a group ("^^^^").
 set oldNode -1
 foreach node [traverse $tree] {
-    # Transition out of a group if we see either (1) the same leaf
-    # depth but a different parent node for the same leaf level or (2)
-    # a different leaf depth.
+    # This is broken for corner cases. What you want to do here is to
+    # walk up the oldNode until you hit a common parent with the new
+    # node. Everytime you do this, you pop. You then traverse down the
+    # new node until you hit a leaf. Every increase in depth is a push.
+
+    # Transition out of a group if the oldNode is deeper than the new
+    # node. We may have to jump out multiple levels here.
+    set oldDepth [llength $oldNode]
+    set newDepth [llength $node]
+    for {set i 0} {$i < [llength $oldNode] - [llength $node]} {incr i} {
+        puts "@1401200"
+        puts "-[pop hier]"
+        puts "@22"
+        puts "\[*\]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    }
+    # Weak check that will handle a node change of the same depth (or
+    # different depth if we've just done some number of pops).
     if {(([llength $node] == [llength $oldNode]) &&
          ([lindex $node end-1] != [lindex $oldNode end-1])) ||
-        ([llength $node] < [llength $oldNode])} {
+        (($i > 0) &&
+         ([lindex $node end-1] != [lindex $oldNode end-[expr $i+1]]))} {
         puts "@1401200"
         puts "-[pop hier]"
         puts "@22"
