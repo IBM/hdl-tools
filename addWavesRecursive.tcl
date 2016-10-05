@@ -9,9 +9,9 @@
 #   gtkwave -S addWavesRecursive.tcl [VCD FILE] > [GTKW FILE]
 #   gtkwave [VCD FILE] [GTKW FILE]
 #-------------------------------------------------------------------------------
-# Contact point: Schuyler Eldridge <schuyler.eldridge@gmail.com>
+# Contact point: Schuyler Eldridge <schuyler.eldridge@ibm.com>
 #
-# Copyright (C) 2015 Schuyler Eldridge, Boston University
+# Copyright (C) 2016 IBM
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,22 +26,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #-------------------------------------------------------------------------------
 
-#--------------------------------------- Stack operations
-# Push and pop as defined by Richard Suchenwirth [1]
-#
-# REFERENCES
-#   [1] http://wiki.tcl.tk/3333
-interp alias {} push {} lappend
-
-proc pop name {
-    upvar 1 $name stack
-    set res [lindex $stack end]
-    set stack [lreplace $stack [set stack end] end]
-    set res
-}
-
-#--------------------------------------- Tree Traversal
-# Functions for tree traversal as defined by Richard Suchenwirth [2].
+#--------------------------------------- VCD file as a tree
 # Here, we're dealing with a data structure to describe a tree that
 # consists of nested lists. So, assume that we have the following HDL
 # structure as can be gleaned from looking at all the nodes in a VCD
@@ -58,51 +43,12 @@ proc pop name {
 #
 #   {A clk reset {B x y}}
 #
-# I've borrowed the following functions from Suchenwirth for getting
-# information about and traversing a tree composed of lists:
-#   * `traverse` -- dumps out a flat list composed of all the indices
-#     into the actual tree
-#   * `fromRoot` -- dumps out the indices of all nodes from the root
-#     to the specified node
-#   * `absolutePath`: -- uses `fromRoot` to find all the nodes and
-#     then returns a list of the names of all these nodes
-#
-# REFERENCES
-#   [2] http://wiki.tcl.tk/8580
-proc traverse {tree {prefix ""}} {
-    set res {}
-    if {[llength $tree]>1} {
-        lappend res [concat $prefix 0] ;# content
-        set i 0
-        foreach child [lrange $tree 1 end] {
-            eval lappend res [traverse $child [concat $prefix [incr i]]]
-        }
-    } else {set res [list $prefix]} ;# leaf
-    set res
-}
-
-proc fromRoot index {
-    set res {}
-    set path {}
-    foreach i $index {
-        if $i {lappend res [concat $path 0]}
-        lappend path $i
-    }
-    lappend res $index
-}
-
-proc absolutePath {tree index} {
-    set res {}
-    foreach i [fromRoot $index] {
-        lappend res [lindex $tree $i]
-    }
-    set res
-}
+# Thereby the first entry in a list is the module name and everything
+# else is the module body (c.f., Lisp `car` and `cdr`). A signal is a
+# list with size == 1 while a module is a list with size > 1.
 
 #--------------------------------------- New procedures for addWavesRecursive
-# Procedure to construct a linear tree (terminology is probably wrong)
-# of the nested list structure that we're using. This can then be
-# relatively easily merged with an existing leafy tree.
+# Given a raw VCD signal, construct a tree out of this.
 proc constructTree {signal} {
     foreach node [lreverse [string map {. " "} $signal]] {
         if {[info exists tree]} {
@@ -114,12 +60,11 @@ proc constructTree {signal} {
     return $tree
 }
 
-# Attaches a linear subtree to an existing tree. I use this to build
-# up the full tree data structure. The tree and subtree must have the
-# same root node. This recursive function looks at all the children of
-# both the tree and the subtree and recurses if it finds a matching
-# child. If it doesn't find a matching child, it will append the
-# subtree to the current node.
+# Attaches a linear subtree to an existing tree. The tree and subtree
+# must have the same root node. This function looks at all the
+# children of both the tree and the subtree and recurses if it finds a
+# matching child. If it doesn't find a matching child, it will append
+# the subtree to the current node.
 proc merge {tree subtree} {
     set index 1
     set newtree {}
@@ -137,57 +82,9 @@ proc merge {tree subtree} {
     return $tree
 }
 
-#---------------------------------------- Main addWavesRecursive TCL script
-set nfacs [ gtkwave::getNumFacs ]
-set dumpname [ gtkwave::getDumpFileName ]
-set dmt [ gtkwave::getDumpType ]
-
-# Some information is included in the GTKWave header, however this
-# doesn't appear to have much effect on GTKWave. Generally, GTKWave
-# will just ignore things it doesn't understand. Nevertheless, we
-# default to using a coment syntax of "[*]":
-# puts "\[*\] number of signals in dumpfile '$dumpname' of type $dmt: $nfacs"
-# puts "\[dumpfile\] \"[file join [pwd] $dumpname]\""
-# puts "\[dumpfile_size\] [file size [file join [pwd] $dumpname]]"
-# puts "\[optimize_vcd\]"
-# A .gtkw file has some additional meta information which we're not
-# using:
-# puts "\[savefile\]"
-# puts "\[timestart\] 0"
-
-# Populate a list called 'signals' with all the signals found in the
-# design
-set signals [list]
-for {set i 0} {$i < $nfacs } {incr i} {
-    set facname [ gtkwave::getFacName $i ]
-    lappend signals "$facname"
-}
-
-# Based on what the signals that we found are, we need to figure out
-# what is the top module. The following examines the first signal and
-# rips out the first string before the first ".".
-set tree [lindex [split [lindex $signals 0] .] 0]
-
-# Now, construct a bare tree representation for each of the signals and
-# merge them into a large, complete tree that represents the
-# hierarchical structure of the entire design.
-foreach signal $signals {
-    # puts [constructTree $signal]
-    set tree [merge $tree [constructTree $signal]]
-}
-
-# Dump out the number of signals that we found.
-set num_added [ gtkwave::addSignalsFromList $signals ]
-puts "\[*\] num signals added: $num_added"
-
-# Dump additional configuration information
-puts "\[sst_expanded\] 0"
-
-# Having this tree, we can then generate a .gtkw configuration that we
-# can load in with all the signals. GTKWave uses some special bit
-# flags to tell it what type of signal we're dealing with. This is all
-# documented internally in their "analyzer.h" file. However, all that
-# we really care about are:
+# GTKWave uses some special bit flags to tell it what type of signal
+# we're dealing with. This is all documented internally in their
+# "analyzer.h" file. However, all that we really care about are:
 #
 #        0x22: (right justified) | (hexadecimal format)
 #        0x28: (right justified) | (binary format)
@@ -203,64 +100,72 @@ puts "\[sst_expanded\] 0"
 #
 #    0x800200: (group start)     | (TR_BLANK)
 #   0x1000200: (group end)       | (TR_BLANK)
-#
-# We loop over all the nodes and dump out the group names (and GTKWave
-# hex flags). Group names are pushed onto a stack when we find a new
-# group so that they can be popped when we get to the end of the
-# current module. To make this easier to visually parse, we throw in
-# some comment lines indicating the beginning of a new group ("vvvv")
-# and the end of a group ("^^^^").
-set oldNode -1
-foreach node [traverse $tree] {
-    # This is broken for corner cases. What you want to do here is to
-    # walk up the oldNode until you hit a common parent with the new
-    # node. Everytime you do this, you pop. You then traverse down the
-    # new node until you hit a leaf. Every increase in depth is a push.
-
-    # Transition out of a group if the oldNode is deeper than the new
-    # node. We may have to jump out multiple levels here.
-    set oldDepth [llength $oldNode]
-    set newDepth [llength $node]
-    for {set i 0} {$i < [llength $oldNode] - [llength $node]} {incr i} {
-        puts "@1401200"
-        puts "-[pop hier]"
-        puts "@22"
-        puts "\[*\]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-    }
-    # Weak check that will handle a node change of the same depth (or
-    # different depth if we've just done some number of pops).
-    if {(([llength $node] == [llength $oldNode]) &&
-         ([lindex $node end-1] != [lindex $oldNode end-1])) ||
-        (($i > 0) &&
-         ([lindex $node end-1] != [lindex $oldNode end-[expr $i+1]]))} {
-        puts "@1401200"
-        puts "-[pop hier]"
-        puts "@22"
-        puts "\[*\]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-    }
-    # Transition into a group when we see a new initial leaf with an
-    # index of 0.
-    if {[lindex $node end] == 0} {
-        puts "\[*\]vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
-        puts "@c00200"
-        puts "-[join [absolutePath $tree $node] .]"
-        puts "@22"
-        push hier [join [absolutePath $tree $node] .]
-        set oldNode $node
-        continue
-    }
-    # Print the current signal name.
-    puts "[join [absolutePath $tree $node] .]"
-    set oldNode $node
+proc gtkwaveEnterModule {module} {
+    puts "\[*\]vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+    puts "@c00200"
+    puts "-$module"
+    puts "@22"
 }
-# We're done, but the stack may still have entries, i.e., there are
-# unclosed groups. Dump all these to close everything.
-foreach node $hier {
+proc gtkwaveExitModule {module} {
     puts "@1401200"
-    puts "-[pop hier]"
+    puts "-$module"
     puts "@22"
     puts "\[*\]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 }
+
+# Walk a tree or emitting the enter/exit module GTK boilerplate
+# whenever we hit a module.
+proc gtkwaveEmitModule {tree prefix} {
+    set car [lindex $tree 0]
+    set cdr [lrange $tree 1 end]
+    gtkwaveEnterModule $prefix$car
+    puts "\[*\] MODULE: $prefix$car"
+    foreach signal $cdr {
+        if {[llength $signal] > 1} {
+            gtkwaveEmitModule $signal "$prefix$car."
+        } else {
+            puts "$prefix$car.$signal"
+        }
+    }
+    gtkwaveExitModule $prefix$car
+}
+
+#---------------------------------------- Main addWavesRecursive TCL script
+set nfacs    [ gtkwave::getNumFacs      ]
+set dumpname [ gtkwave::getDumpFileName ]
+set dmt      [ gtkwave::getDumpType     ]
+
+# Some information is included in the GTKWave header, however this
+# doesn't appear to have much effect on GTKWave. Generally, GTKWave
+# will just ignore things it doesn't understand. Nevertheless, we
+# default to using a coment syntax of "[*]":
+# puts "\[*\] number of signals in dumpfile '$dumpname' of type $dmt: $nfacs"
+# puts "\[dumpfile\] \"[file join [pwd] $dumpname]\""
+# puts "\[dumpfile_size\] [file size [file join [pwd] $dumpname]]"
+# puts "\[optimize_vcd\]"
+# A .gtkw file has some additional meta information which we're not
+# using:
+# puts "\[savefile\]"
+# puts "\[timestart\] 0"
+
+# Get a list of all the signals in the design
+set signals [list]
+for {set i 0} {$i < $nfacs } {incr i} {
+    set facname [ gtkwave::getFacName $i ]
+    lappend signals "$facname"
+}
+
+# Initialize a singal node tree with the top module
+set tree [lindex [split [lindex $signals 0] .] 0]
+
+# Append each of the signals to the tree. [TODO] Possibly a source of
+# slowdown.
+foreach signal $signals {
+    set tree [merge $tree [constructTree $signal]]
+}
+
+# Walk the tree emitting a .gtkw file describing the hierarchy
+gtkwaveEmitModule $tree ""
 
 # We're done, so exit.
 gtkwave::/File/Quit
