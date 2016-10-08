@@ -118,7 +118,7 @@ proc gtkwaveExitModule {module} {
 proc gtkwaveEmitModule {tree prefix} {
     set car [lindex $tree 0]
     set cdr [lrange $tree 1 end]
-    gtkwaveEnterModule $prefix$car
+    gtkwaveEnterModule $car
     puts "\[*\] MODULE: $prefix$car"
     foreach signal $cdr {
         if {[llength $signal] > 1} {
@@ -127,7 +127,7 @@ proc gtkwaveEmitModule {tree prefix} {
             puts "$prefix$car.$signal"
         }
     }
-    gtkwaveExitModule $prefix$car
+    gtkwaveExitModule $car
 }
 
 #---------------------------------------- Main addWavesRecursive TCL script
