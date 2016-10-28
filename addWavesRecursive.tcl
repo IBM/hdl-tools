@@ -36,50 +36,48 @@
 #   |-- A.clk
 #   |-- A.reset
 #   |-- B
-#       |-- B.x
-#       |-- B.y
+#   |   |-- B.x
+#   |   \-- B.y
+#   \-- C
 #
 # In a tree, this looks like:
 #
-#   {A clk reset {B x y}}
+#   {A clk reset {B x y} C}
 #
 # Thereby the first entry in a list is the module name and everything
 # else is the module body (c.f., Lisp `car` and `cdr`). A signal is a
 # list with size == 1 while a module is a list with size > 1.
+proc car x { lindex $x 0 }
+proc cdr x { lrange $x 1 end }
 
 #--------------------------------------- New procedures for addWavesRecursive
 # Given a raw VCD signal, construct a tree out of this.
 proc constructTree {signal} {
-    foreach node [lreverse [string map {. " "} $signal]] {
-        if {[info exists tree]} {
-            set tree [list $node $tree]
-        } else {
-            set tree $node
-        }
+    set tmp [lreverse [string map {. " "} $signal]]
+    set tree [car $tmp]
+    foreach node [cdr $tmp]  {
+        set tree [list $node $tree]
     }
     return $tree
 }
 
-# Attaches a linear subtree to an existing tree. The tree and subtree
-# must have the same root node. This function looks at all the
-# children of both the tree and the subtree and recurses if it finds a
-# matching child. If it doesn't find a matching child, it will append
-# the subtree to the current node.
-proc merge {tree subtree} {
-    set index 1
-    set newtree {}
-    foreach child [lrange $tree 1 end] {
-        foreach subchild [lrange $subtree 1 end] {
-            # If we find a match, then we recurse
-            if {[string compare [lindex $child 0] [lindex $subchild 0]] == 0} {
-                return [lreplace $tree $index $index [merge $child $subchild]]
-            }
+# Merges two lexically sorted trees.
+proc merge {a b} {
+    set a_i 1
+    set b_i 1
+    while {($a_i < [llength $a]) || ($b_i < [llength $b])} {
+        set x [lindex $a $a_i]
+        set y [lindex $b $b_i]
+
+        switch [string compare [car $x] [car $y]] {
+            -1 {if {$a_i >= [llength $a] - 1} { break }
+                incr a_i }
+            1  {if {$b_i >= [llength $b] - 1} { break }
+                incr b_i }
+            0  {return [lreplace $a $a_i $a_i [merge $x $y]] }
         }
-        incr index
     }
-    # We didn't find anything so we just append this list
-    lappend tree [lindex $subtree 1]
-    return $tree
+    return [lappend a [lindex $b 1]]
 }
 
 # GTKWave uses some special bit flags to tell it what type of signal
@@ -115,14 +113,15 @@ proc gtkwaveExitModule {module} {
 
 # Walk a tree or emitting the enter/exit module GTK boilerplate
 # whenever we hit a module.
-proc gtkwaveEmitModule {tree prefix} {
-    set car [lindex $tree 0]
-    set cdr [lrange $tree 1 end]
+proc gtkwaveEmitModule {tree prefix spacing} {
+    set car [car $tree]
+    set cdr [cdr $tree]
     gtkwaveEnterModule $car
+    puts stderr "\[INFO\]  $spacing$car"
     puts "\[*\] MODULE: $prefix$car"
     foreach signal $cdr {
         if {[llength $signal] > 1} {
-            gtkwaveEmitModule $signal "$prefix$car."
+            gtkwaveEmitModule $signal "$prefix$car." "  $spacing"
         } else {
             puts "$prefix$car.$signal"
         }
@@ -148,24 +147,28 @@ set dmt      [ gtkwave::getDumpType     ]
 # puts "\[savefile\]"
 # puts "\[timestart\] 0"
 
-# Get a list of all the signals in the design
+# Get a list of all the signals in the design that are not "generated"
+# or "temporary".
+puts stderr "\[INFO\] Reading all signals in design"
 set signals [list]
 for {set i 0} {$i < $nfacs } {incr i} {
     set facname [ gtkwave::getFacName $i ]
-    lappend signals "$facname"
+    if {![regexp {^.*\.(GEN|T)_.*} $facname]} {
+        lappend signals "$facname"
+    }
 }
 
-# Initialize a singal node tree with the top module
-set tree [lindex [split [lindex $signals 0] .] 0]
-
-# Append each of the signals to the tree. [TODO] Possibly a source of
-# slowdown.
+# Initialize a singal node tree with the top module. Append each of
+# the signals to the tree. [TODO] Possibly a source of slowdown.
+puts stderr "\[INFO\] Construcing Tree"
+set tree [lindex [split [car $signals] .] 0]
 foreach signal $signals {
     set tree [merge $tree [constructTree $signal]]
 }
 
 # Walk the tree emitting a .gtkw file describing the hierarchy
-gtkwaveEmitModule $tree ""
+puts stderr "\[INFO\] Emitting modules"
+gtkwaveEmitModule $tree "" ""
 
 # We're done, so exit.
 gtkwave::/File/Quit
