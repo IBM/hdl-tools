@@ -1,0 +1,160 @@
+#!/usr/bin/perl -w
+
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+
+use strict;
+use warnings;
+use vars qw ($debug $PREFIX);
+# use re 'debugcolor';
+
+$debug = 0;
+my $opt_modules;
+my $opt_output_filename = undef;
+my @opt_files;
+
+Getopt::Long::config ("no_auto_abbrev","no_pass_through");
+if (! GetOptions
+    ("debug"        => \$debug,
+     "h|?|help"     => \&usage,
+     "m|module=s"   => sub{
+         shift;
+         my $module = shift;
+         if ($opt_modules eq ".") { $opt_modules = "($module)"; }
+         else {$opt_modules = "$opt_modules|($module)"}
+     },
+     "o|output=s"   => \$opt_output_filename,
+     "<>"           => \&parameter,
+    )) {
+    \&usage and die "[ERROR] Bad usage\n"
+}
+print STDERR "[ERROR] No input filenames specified.\n" and usage() if !@opt_files;
+
+print STDERR "[ERROR] Specify at least one root module to dump.\n" and usage() if !opt_modules;
+
+if ($debug) { print "[DEBUG] Using module regex match: /$opt_modules/\n"; }
+
+my $file_out;
+if ($opt_output_filename) {
+    open $file_out, ">", "$opt_output_filename" or
+        die "[ERROR] Unable to open $file_out\n";
+}
+
+foreach (@opt_files) {
+    prune($_);
+}
+
+if ($opt_output_filename) {
+    close $file_out;
+}
+
+sub prune {
+    my $file = shift;
+    open my $fh, "<", $file or die "[ERROR] Unable to open $file\n";
+
+    # Build up a hash of all signals to include and signals to skip
+    my %includes;
+    my %skips;
+    my @scope;
+    my $header = "";
+    my $found_module = 0;
+    while (<$fh>) {
+        if ($_ =~ /^\$enddefinitions \$end$/) {
+            if ($file_out) {print $file_out $_} else {print $_};
+            last;
+        }
+        if ($_ =~ /\$version|\$date|^\s*\$end$|\$timescale/) {
+            if ($file_out) {print $file_out $_} else {print $_};
+            next;
+        }
+
+        if ($_ =~ /^\s*\$scope module (.+) \$end$/) {
+            my $module = $1;
+            if ($_ =~ /$opt_modules/ || $found_module) {
+                $found_module++;
+                if ($file_out) {print $file_out $_} else {print $_};
+            }
+
+            push @scope, $module;
+            if ($debug) { print "[DEBUG] $found_module  $header$module\n"; }
+            $header = "$header  ";
+
+            next;
+        }
+        if ($_ =~ /^\s*\$upscope \$end$/) {
+            if ($found_module) {
+                $found_module--;
+                if ($file_out) {print $file_out $_} else {print $_};
+            }
+
+            $header = substr($header, 0, -2);
+            pop @scope;
+            next;
+        }
+        if ($found_module) {
+            if ($_ !~ /^\s*\$var\s+wire\s+\d+\s+(.+?)\s+(.+)\$end$/) {
+                die;
+            }
+            if ($file_out) {print $file_out $_} else {print $_};
+            # print "$1 -> $2\n";
+            $includes{$1}++;
+        }
+    }
+
+    # Prune the VCD file
+    while (<$fh>) {
+        if ($_ =~ /^#/ || /^$/) {
+            if ($file_out) {print $file_out $_} else {print $_};
+            next;
+        }
+        my $signal;
+        if ($_ =~ /^[01](.+)$/ || /^.+ (.+)$/) {
+            $signal = $1;
+        }
+        if ($includes{$signal}) {
+            if ($file_out) {print $file_out $_} else {print $_};
+        }
+    }
+
+    close $fh;
+}
+
+sub usage {
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT, -noperldoc=>1);
+}
+
+sub parameter {
+    my $param = shift;
+    if ($param =~ /^--?/) {
+        die "[ERROR] Unknown parameter: $param\n";
+    } else {
+        push @opt_files, "$param"; # Must quote for Getopt to string, bug298
+    }
+}
+
+__END__
+
+=pod
+
+=head1 NAME
+
+vcd-prune - Remove/keep the signals of specific modules in a VCD file
+
+=head1 SYNOPSIS
+
+  Usage: vcd-prune [OPTIONS]... [VCD_FILE.vcd]
+
+=head1 OPTIONS
+
+Mandatory arguments to long options are mandatory to short options, too.
+
+  --debug                    Enable debugging information as the hierarchy is
+                             traversed.
+  -h, -?, --help             Print this help text
+  -m, --module=MODULE        Modules to include in the VCD file. All submodules
+                             will be included. This option can be specified
+                             multiple times for multiple modules. By default
+                             all top modules are instrumented (why would you do
+                             this?). Note, this is technically a regex.
+  -o, --output=FILE          Output file. Default is STDOUT.
