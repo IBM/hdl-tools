@@ -61,7 +61,7 @@ proc constructTree {signal} {
     return $tree
 }
 
-# Merges two lexically sorted trees.
+# Merges two lexicographically sorted trees.
 proc merge_slow {a b} {
     set a_i 1
     set b_i 1
@@ -81,10 +81,10 @@ proc merge_slow {a b} {
 }
 
 # Merges a bushy tree (branching factor >= 1) 'a' with all nodes at
-# the same depth lexically sorted with a slim tree (branching factor
-# == 1), 'b'. This compares, at the same depth, the last node in the
-# 'a' with the (only) node in 'b'. If these are the same, then we
-# recurse one layer deeper in 'a' and 'b'. Otherwise, 'b' is a new
+# the same depth lexicographically sorted with a slim tree (branching
+# factor == 1), 'b'. This compares, at the same depth, the last node
+# in the 'a' with the (only) node in 'b'. If these are the same, then
+# we recurse one layer deeper in 'a' and 'b'. Otherwise, 'b' is a new
 # branch that should be appended at this depth to 'a'.
 proc merge_fast {a b} {
     set a_i [expr {[llength $a] - 1}]
