@@ -139,13 +139,20 @@ proc gtkwaveEmitModule {tree prefix spacing} {
     gtkwaveEnterModule $car
     # puts stderr "\[INFO\]  $spacing$car"
     puts "\[*\] MODULE: $prefix$car"
+
+    set signals [list]
     foreach signal $cdr {
         if {[llength $signal] > 1} {
             gtkwaveEmitModule $signal "$prefix$car." "  $spacing"
         } else {
-            puts "$prefix$car.$signal"
+            lappend signals $signal
         }
     }
+
+    foreach signal $signals {
+        puts "$prefix$car.$signal"
+    }
+
     gtkwaveExitModule $car
 }
 
@@ -194,7 +201,7 @@ foreach signal $trees {
 }
 
 # Walk the tree emitting a .gtkw file describing the hierarchy
-puts stderr "\[INFO\] Emitting modules"
+puts stderr "\[INFO\] Emitting .gtkw"
 gtkwaveEmitModule $tree "" ""
 
 # We're done, so exit.
