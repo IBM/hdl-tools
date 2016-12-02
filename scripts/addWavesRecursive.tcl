@@ -118,42 +118,43 @@ proc merge_fast {a b} {
 #
 #    0x800200: (group start)     | (TR_BLANK)
 #   0x1000200: (group end)       | (TR_BLANK)
-proc gtkwaveEnterModule {module} {
+proc gtkwaveEnterModule {module header} {
     puts "\[*\]vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
     puts "@c00200"
-    puts "-$module"
+    puts "-$header$module"
     puts "@22"
 }
-proc gtkwaveExitModule {module} {
+proc gtkwaveExitModule {module header} {
     puts "@1401200"
-    puts "-$module"
+    puts "-$header$module"
     puts "@22"
     puts "\[*\]^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
 }
 
 # Walk a tree or emitting the enter/exit module GTK boilerplate
 # whenever we hit a module.
-proc gtkwaveEmitModule {tree prefix spacing} {
+proc gtkwaveEmitModule {tree prefix spacing header} {
     set car [car $tree]
     set cdr [cdr $tree]
-    gtkwaveEnterModule $car
+    gtkwaveEnterModule $car $header
     # puts stderr "\[INFO\]  $spacing$car"
     puts "\[*\] MODULE: $prefix$car"
 
     set signals [list]
+    set newHeader [string map {"-" " "} $header]
     foreach signal $cdr {
         if {[llength $signal] > 1} {
-            gtkwaveEmitModule $signal "$prefix$car." "  $spacing"
+            gtkwaveEmitModule $signal "$prefix$car." "  $spacing" "$newHeader |-"
         } else {
             lappend signals $signal
         }
     }
 
     foreach signal $signals {
-        puts "$prefix$car.$signal"
+        puts "+{$signal} $prefix$car.$signal"
     }
 
-    gtkwaveExitModule $car
+    gtkwaveExitModule $car $header
 }
 
 #---------------------------------------- Main addWavesRecursive TCL script
@@ -202,7 +203,7 @@ foreach signal $trees {
 
 # Walk the tree emitting a .gtkw file describing the hierarchy
 puts stderr "\[INFO\] Emitting .gtkw"
-gtkwaveEmitModule $tree "" ""
+gtkwaveEmitModule $tree "" "" ""
 
 # We're done, so exit.
 gtkwave::/File/Quit
