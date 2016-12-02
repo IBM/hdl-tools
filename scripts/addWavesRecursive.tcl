@@ -193,10 +193,6 @@ foreach signal $trees {
     set tree [merge_fast $tree $signal]
 }
 
-# foreach signal $signals {
-#     set tree [merge $tree [constructTree $signal]]
-# }
-
 # Walk the tree emitting a .gtkw file describing the hierarchy
 puts stderr "\[INFO\] Emitting modules"
 gtkwaveEmitModule $tree "" ""
