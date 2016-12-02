@@ -62,7 +62,7 @@ proc constructTree {signal} {
 }
 
 # Merges two lexically sorted trees.
-proc merge {a b} {
+proc merge_slow {a b} {
     set a_i 1
     set b_i 1
     while {($a_i < [llength $a]) || ($b_i < [llength $b])} {
@@ -74,10 +74,30 @@ proc merge {a b} {
                 incr a_i }
             1  {if {$b_i >= [llength $b] - 1} { break }
                 incr b_i }
-            0  {return [lreplace $a $a_i $a_i [merge $x $y]] }
+            0  {return [lreplace $a $a_i $a_i [merge_slow $x $y]] }
         }
     }
     return [lappend a [lindex $b 1]]
+}
+
+# Merges a bushy tree (branching factor >= 1) 'a' with all nodes at
+# the same depth lexically sorted with a slim tree (branching factor
+# == 1), 'b'. This compares, at the same depth, the last node in the
+# 'a' with the (only) node in 'b'. If these are the same, then we
+# recurse one layer deeper in 'a' and 'b'. Otherwise, 'b' is a new
+# branch that should be appended at this depth to 'a'.
+proc merge_fast {a b} {
+    set a_i [expr {[llength $a] - 1}]
+    set b_i 1
+
+    set x [lindex $a $a_i]
+    set y [lindex $b $b_i]
+
+    if { [string compare [car $x] [car $y]] } {
+        return [lappend a [lindex $b 1]]
+    }
+
+    return [lreplace $a $a_i $a_i [merge_fast $x $y]]
 }
 
 # GTKWave uses some special bit flags to tell it what type of signal
@@ -117,7 +137,7 @@ proc gtkwaveEmitModule {tree prefix spacing} {
     set car [car $tree]
     set cdr [cdr $tree]
     gtkwaveEnterModule $car
-    puts stderr "\[INFO\]  $spacing$car"
+    # puts stderr "\[INFO\]  $spacing$car"
     puts "\[*\] MODULE: $prefix$car"
     foreach signal $cdr {
         if {[llength $signal] > 1} {
@@ -157,14 +177,25 @@ for {set i 0} {$i < $nfacs } {incr i} {
         lappend signals "$facname"
     }
 }
+puts stderr "\[INFO\]   Found [llength $signals]"
 
-# Initialize a singal node tree with the top module. Append each of
+# Initialize a single node tree with the top module. Append each of
 # the signals to the tree. [TODO] Possibly a source of slowdown.
-puts stderr "\[INFO\] Construcing Tree"
-set tree [lindex [split [car $signals] .] 0]
+puts stderr "\[INFO\] Construcing Trees"
+set trees [list]
 foreach signal $signals {
-    set tree [merge $tree [constructTree $signal]]
+    lappend trees [constructTree $signal]
 }
+
+puts stderr "\[INFO\] Merging Trees"
+set tree [lindex [split [car $signals] .] 0]
+foreach signal $trees {
+    set tree [merge_fast $tree $signal]
+}
+
+# foreach signal $signals {
+#     set tree [merge $tree [constructTree $signal]]
+# }
 
 # Walk the tree emitting a .gtkw file describing the hierarchy
 puts stderr "\[INFO\] Emitting modules"
