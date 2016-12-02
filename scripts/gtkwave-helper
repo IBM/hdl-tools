@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Helper script that launches GTKWave for a specific [vcd-file] using
+# scripts/addWavesRecursive.tcl to populate the waveform window with
+# signals grouped by module.
+
+usage () {
+    echo "Usage: $0 [vcd-file]"
+}
+
+base_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ENV=env PATH=$base_dir/../opt/bin:$base_dir:$PATH
+
+if [ $# -ne 1 ]
+then
+    usage
+    exit
+fi
+
+if [ ! -f $local_gtkwave ]; then
+    make -C $base_dir/hdl-tools gtkwave;
+fi;
+
+echo "[INFO] Preprocessing $1 to generate $1.gtkw"
+time gtkwave -g -S $base_dir/addWavesRecursive.tcl $1 > $1.gtkw
+echo "[INFO] Launching graphical GTKWave..."
+gtkwave -g $1 $1.gtkw

@@ -22,9 +22,11 @@ gtkwave: $(PREFIX)/bin/gtkwave ## build gtkwave
 $(PREFIX)/bin/%:
 	$(MAKE) -C $(base_dir)/$* PREFIX=$(PREFIX) JOBS=$(JOBS) $@
 
-clean:
-	rm -rf $(PREFIX)
+clean-installed: ## remove the installed tools in ./opt
+	rm -rf $(base_dir)/opt
 
-mrproper: clean
+clean-downloaded: ## blow away program source directories
 	rm -rf $(base_dir)/verilator/repo
 	rm -rf $(base_dir)/gtkwave/repo
+
+mrproper: clean-installed clean-downloaded ## remote tools and blow away download sources
