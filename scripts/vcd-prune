@@ -31,7 +31,7 @@ if (! GetOptions
 }
 print STDERR "[ERROR] No input filenames specified.\n" and usage() if !@opt_files;
 
-print STDERR "[ERROR] Specify at least one root module to dump.\n" and usage() if !opt_modules;
+print STDERR "[ERROR] Specify at least one root module to dump.\n" and usage() if !$opt_modules;
 
 if ($debug) { print "[DEBUG] Using module regex match: /$opt_modules/\n"; }
 
