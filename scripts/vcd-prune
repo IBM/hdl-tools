@@ -7,31 +7,29 @@ use Pod::Usage;
 use strict;
 use warnings;
 use vars qw ($debug $PREFIX);
-# use re 'debugcolor';
 
 $debug = 0;
-my $opt_modules;
-my $opt_output_filename = undef;
+my $opt_modules = "";
+my $opt_output_filename;
 my @opt_files;
 
 Getopt::Long::config ("no_auto_abbrev","no_pass_through");
 if (! GetOptions
-    ("debug"        => \$debug,
-     "h|?|help"     => \&usage,
-     "m|module=s"   => sub{
+    ("debug"      => \$debug,
+     "h|help"     => \&usage,
+     "m|module=s" => sub{
          shift;
          my $module = shift;
-         if ($opt_modules eq ".") { $opt_modules = "($module)"; }
+         if ($opt_modules eq "") { $opt_modules = "($module)"; }
          else {$opt_modules = "$opt_modules|($module)"}
      },
-     "o|output=s"   => \$opt_output_filename,
-     "<>"           => \&parameter,
+     "o|output=s" => \$opt_output_filename,
+     "<>"         => \&parameter,
     )) {
     \&usage and die "[ERROR] Bad usage\n"
 }
-print STDERR "[ERROR] No input filenames specified.\n" and usage() if !@opt_files;
-
-print STDERR "[ERROR] Specify at least one root module to dump.\n" and usage() if !$opt_modules;
+print STDERR "[ERROR] Specify at least one root module to dump.\n" and usage()
+    if !$opt_modules;
 
 if ($debug) { print "[DEBUG] Using module regex match: /$opt_modules/\n"; }
 
@@ -41,8 +39,14 @@ if ($opt_output_filename) {
         die "[ERROR] Unable to open $file_out\n";
 }
 
-foreach (@opt_files) {
-    prune($_);
+if (!@opt_files) {
+    prune(\*STDIN);
+} else {
+    foreach (@opt_files) {
+        open my $fh, "<", $_ or die "[ERROR] Unable to open $_\n";
+        prune($fh);
+        close $fh;
+    }
 }
 
 if ($opt_output_filename) {
@@ -50,8 +54,7 @@ if ($opt_output_filename) {
 }
 
 sub prune {
-    my $file = shift;
-    open my $fh, "<", $file or die "[ERROR] Unable to open $file\n";
+    my $fh = shift;
 
     # Build up a hash of all signals to include and signals to skip
     my %includes;
@@ -97,7 +100,6 @@ sub prune {
                 die;
             }
             if ($file_out) {print $file_out $_} else {print $_};
-            # print "$1 -> $2\n";
             $includes{$1}++;
         }
     }
@@ -116,8 +118,6 @@ sub prune {
             if ($file_out) {print $file_out $_} else {print $_};
         }
     }
-
-    close $fh;
 }
 
 sub usage {
@@ -129,7 +129,7 @@ sub parameter {
     if ($param =~ /^--?/) {
         die "[ERROR] Unknown parameter: $param\n";
     } else {
-        push @opt_files, "$param"; # Must quote for Getopt to string, bug298
+        push @opt_files, "$param";
     }
 }
 
@@ -143,7 +143,14 @@ vcd-prune - Remove/keep the signals of specific modules in a VCD file
 
 =head1 SYNOPSIS
 
-  Usage: vcd-prune [OPTIONS]... [VCD_FILE.vcd]
+  vcd-prune -m MODULE [-m MODULE...] [OPTION]... [VCD...]
+
+=head1 DESCRIPTION
+
+  This reads an explicitly specified VCD file or STDIN and extracts
+  only those signals encapsulated by the specified MODULE (or multiple
+  modules). The output vcd file will be written to STDOUT by default
+  or to a file if so specified.
 
 =head1 OPTIONS
 
@@ -151,7 +158,7 @@ Mandatory arguments to long options are mandatory to short options, too.
 
   --debug                    Enable debugging information as the hierarchy is
                              traversed.
-  -h, -?, --help             Print this help text
+  -h, --help                 Print this help text
   -m, --module=MODULE        Modules to include in the VCD file. All submodules
                              will be included. This option can be specified
                              multiple times for multiple modules. By default
