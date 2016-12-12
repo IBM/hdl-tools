@@ -1,3 +1,6 @@
+HDL Tools [![Build Status](https://travis.ibm.com/perfect/hdl-tools.svg?token=MZrVTqdfH1B59XT95fGC&branch=master)](https://travis.ibm.com/perfect/hdl-tools)
+=====================
+
 Environment for working with HDLs. This builds a number of tools from source and relies on some scripts to facilitate HDL work.
 
 ## Programs
