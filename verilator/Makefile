@@ -2,6 +2,7 @@ PREFIX ?= $(abspath ../opt)
 
 .PHONY: install
 
+install:
 $(PREFIX)/bin/verilator: | repo/.git
 	@echo "[INFO] Building Verilator"
 	@echo "[INFO] Verilator uses a lot of memory to build, limiting jobs to 2"

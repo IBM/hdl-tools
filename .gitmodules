@@ -1,3 +1,9 @@
 [submodule "verilator/repo"]
 	path = verilator/repo
 	url = http://git.veripool.org/git/verilator
+[submodule "Verilog"]
+	path = Verilog
+	url = http://git.veripool.org/git/Verilog-Perl
+[submodule "Verilog/repo"]
+	path = Verilog/repo
+	url = http://git.veripool.org/git/Verilog-Perl

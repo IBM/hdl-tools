@@ -14,15 +14,18 @@ Additional targets include:
 
 Tools will, by default, be installed in `./opt/`. However, you can pass a `PREFIX` option to the Makefile if for whatever reason you want to install these somewhere else (not advised).
 
-### [Verilator](http://www.veripool.org/wiki/verilator)
+#### [Verilator](http://www.veripool.org/wiki/verilator)
 Verilog to C++ compiler. This is not required to be built for working with Rocket Chip (it will build its own version of Verilator).
 
-### [GTKWave](http://gtkwave.sourceforge.net/)
+#### [GTKWave](http://gtkwave.sourceforge.net/)
 Open source (GPL2) waveform viewer with TCL integration.
+
+#### [Verilog::Perl](http://www.veripool.org/wiki/verilog-perl)
+Perl tools for working with Verilog netlists.
 
 ## Scripts
 
-### [`addWavesRecursive.tcl`](scripts/addWavesRecursive.tcl)
+#### [`addWavesRecursive.tcl`](scripts/addWavesRecursive.tcl)
 TCL script that, when passed to GTKWave, will generate a saved waveform view (a .gtkw file) that has all the signals in a given VCD file grouped by module. An example invocation would be:
 
 ```
@@ -37,7 +40,7 @@ gtkwave dump.vcd dump.gtkw
 
 After 904555632a5131686c20921593ba7010efece916, this is `O(n log n)` in the number of signals. Previously, this was `O(n^2)`.
 
-### [`vcd-prune`](scripts/vcd-prune)
+#### [`vcd-prune`](scripts/vcd-prune)
 Perl script to prune a VCD file to only include specific modules (and all their submodules. An example invocation would be:
 
 ```
@@ -51,10 +54,10 @@ This will only dump signals contained in MyModule or its submodules. For testing
 * `scripts/`
   * [`addWavesRecursive.tcl`](scripts/addWavesRecursive.tcl) -- TCL script for GTKWave that populates the waveform viewer with signals nested into the module hierarchy
 
-### [`gtkwave-helper`](scripts/gtkwave-helper)
+#### [`gtkwave-helper`](scripts/gtkwave-helper)
 Bash script that takes care of the boilerplate operations necessary to launch GTKWavewith `addWavesRecursive`.
 
-### Complexities
+#### Complexities
 This comes up as these tools are intended to be used on large amounts of data
 
 | Tool                                                     | Complexity     | What is N?        | Critical Region                                 |
