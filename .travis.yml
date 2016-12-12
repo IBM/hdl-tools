@@ -1,0 +1,7 @@
+git:
+  submodules: false
+sudo: false
+dist: trusty
+
+scripts:
+  - make build-all
