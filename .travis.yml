@@ -4,5 +4,5 @@ language: generic
 sudo: false
 dist: trusty
 
-scripts:
+script:
   - make build-all
