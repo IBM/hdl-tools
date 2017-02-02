@@ -14,8 +14,8 @@ perl_libs = \
 default: usage
 
 usage:           ## show this help
-	@echo "Usage: make [target]\nBuild HDL tools in PREFIX (default: $(PREFIX))\n\nOptions:"
-	@grep "##" $(MAKEFILE_LIST) | grep -v "#.ignore" | sed 's/^/  /' | sed 's/:.\+##/,/' | column -s, -n -t #.ignore
+	@echo -e "Usage: make [target]\nBuild HDL tools in PREFIX (default: $(PREFIX))\n\nOptions:"
+	@grep "##" $(MAKEFILE_LIST) | grep -v "#.ignore" | sed 's/^/  /' | sed 's/:.\+##/,/' | column -s, -t
 
 build-all: $(tools:%=$(PREFIX)/bin/%) $(PREFIX)/lib/perl5/x86_64-linux-gnu-thread-multi/Verilog/Netlist.pm ## build all tools
 verilator: $(PREFIX)/bin/verilator ## build verilator
