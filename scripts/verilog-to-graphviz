@@ -1,0 +1,137 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use vars qw($debug $fh);
+
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+
+use lib 'opt/lib/perl5';
+use Verilog::Netlist;
+
+# The default language is Verilog 2001 (1364-2001) as this is what
+# Chisel emits.
+Verilog::Language::language_standard("1364-2001");
+
+my @opt_files;
+my $opt_output_filename;
+my @opt_modules;
+$debug = 0;
+my $Opt = new Verilog::Getopt(filename_expansion=>1);
+if (! GetOptions
+    (
+     "debug"        => \$debug,
+     "h|help"       => \&usage,
+     "l|language=s" => sub{shift;Verilog::Language::language_standard(shift);},
+     "m|module=s"   => sub{shift;push @opt_modules, shift;},
+     "o|output=s"   => \$opt_output_filename,
+     "<>"           => \&parameter,
+    )) {
+    print STDERR "[ERROR] Bad usage\n" and usage();
+}
+print "[ERROR] No input filenames specified.\n" and usage() if !@opt_files;
+
+# Parse all known Verilog-Perl options, see `man Verilog::Getopt` for
+# more information.
+@ARGV = $Opt->parameter(@ARGV);
+
+sub parameter {
+    my $param = shift;
+    if ($param =~ /^--?/) {
+        die "[ERROR] Unknown parameter: $param\n";
+    } else {
+        push @opt_files, "$param"; # Must quote for Getopt to string, bug298
+    }
+}
+
+sub usage {
+    pod2usage(-verbose=>2, -exitval=>1, -output=>\*STDOUT, -noperldoc=>1);
+}
+
+sub traverse {
+    my $m = $_[0];
+    my $indent = $_[1];
+    my $i = $_[2];
+    my $prefix = $_[3];
+
+    my $name = $m->name;
+    print "[DEBUG] $indent".$m->name."\n" if $debug;
+
+    print $fh <<"END";
+${indent}  ${prefix}_$i [label=$i]
+END
+    my $cell_count = 0;
+    foreach ($m->cells_sorted) {
+        $cell_count ++;
+        my $cell_name = $_->name;
+        if (!$_->submod) {
+            print "[DEBUG] $indent".$cell_name." (blackbox)\n" if $debug;
+            next;
+        }
+        traverse($_->submod, $indent."  ", $cell_name, $prefix."_".$i);
+        print $fh <<"END";
+${indent}  ${prefix}_$i -> ${prefix}_${i}_$cell_name
+END
+    }
+}
+
+my $nl = new Verilog::Netlist
+    (options                     => $Opt,
+     keep_comments               => 1,
+     use_vars                    => 1,
+     link_read_nonfatal          => 1,
+     remove_defines_without_tick => 0,
+     dump                        => 1,
+    );
+foreach my $file (@opt_files) {
+    $nl->read_file(filename=>$file);
+}
+$nl->link();
+$nl->exit_if_error();
+
+if ($opt_output_filename) {
+    open $fh, ">", $opt_output_filename or
+        die "[ERROR] Unable to open $opt_output_filename\n";
+    my $header = <<"END";
+digraph G {
+  compound=true
+  node[shape=box]
+END
+    print $fh $header;
+}
+
+my @modules = $nl->top_modules_sorted;
+if (@opt_modules) {
+    undef @modules;
+    foreach (@opt_modules) {
+        push @modules, $nl->find_module($_);
+    }
+}
+
+foreach my $top (@modules) {
+    traverse($top, "  ", $top->name, "");
+}
+
+if ($fh) {
+    print $fh <<"END";
+}
+END
+    close $fh;
+}
+
+__END__
+
+=pod
+
+=head1 NAME
+
+verilog-to-graphviz - Generate Graphviz output from Verilog input
+
+=head1 SYNOPSIS
+
+  Usage: verilog-to-graphviz [OPTIONS] VERILOG.v
+
+=head1 OPTIONS
+
+TBD
