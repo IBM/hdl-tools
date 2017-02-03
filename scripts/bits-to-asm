@@ -1,0 +1,3 @@
+#!/bin/bash
+
+hexdump -v -e '".word 0x" 1 4 "%08x" "\n"' $@
