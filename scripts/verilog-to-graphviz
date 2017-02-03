@@ -16,6 +16,7 @@ Verilog::Language::language_standard("1364-2001");
 
 my @opt_files;
 my $opt_output_filename;
+my $opt_module_regex = "";
 my @opt_modules;
 $debug = 0;
 my $Opt = new Verilog::Getopt(filename_expansion=>1);
@@ -25,6 +26,7 @@ if (! GetOptions
      "h|help"       => \&usage,
      "l|language=s" => sub{shift;Verilog::Language::language_standard(shift);},
      "m|module=s"   => sub{shift;push @opt_modules, shift;},
+     "module-regex=s" => \$opt_module_regex,
      "o|output=s"   => \$opt_output_filename,
      "<>"           => \&parameter,
     )) {
@@ -59,7 +61,7 @@ sub traverse {
     print "[DEBUG] $indent".$m->name."\n" if $debug;
 
     print $fh <<"END";
-${indent}  ${prefix}_$i [label=$i]
+${indent}  ${prefix}_$i [label=$name]
 END
     my $cell_count = 0;
     foreach ($m->cells_sorted) {
@@ -69,6 +71,7 @@ END
             print "[DEBUG] $indent".$cell_name." (blackbox)\n" if $debug;
             next;
         }
+        next if ($opt_module_regex && $_->submod->name =~ /$opt_module_regex/);
         traverse($_->submod, $indent."  ", $cell_name, $prefix."_".$i);
         print $fh <<"END";
 ${indent}  ${prefix}_$i -> ${prefix}_${i}_$cell_name
