@@ -1,3 +1,5 @@
+# See LICENSE.IBM for license details.
+
 # TCL srcipt that uses the TCL-enabled version of GTKWave to generate
 # a .gtkw save file with all the signals and groups found in a .vcd
 # file. You will need to have the TCL enabled version of GTKWave
@@ -8,22 +10,6 @@
 # Usage (run this to generate the .gtkw, then open it in GTKWave):
 #   gtkwave -S addWavesRecursive.tcl [VCD FILE] > [GTKW FILE]
 #   gtkwave [VCD FILE] [GTKW FILE]
-#-------------------------------------------------------------------------------
-# Contact point: Schuyler Eldridge <schuyler.eldridge@ibm.com>
-#
-# Copyright (C) 2016 IBM
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #-------------------------------------------------------------------------------
 
 #--------------------------------------- VCD file as a tree
