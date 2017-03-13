@@ -1,4 +1,7 @@
 #!/usr/bin/env perl
+
+# See LICENSE.IBM for license details.
+
 use strict;
 use warnings;
 use vars qw($debug $fh);
