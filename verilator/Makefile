@@ -10,7 +10,8 @@ $(PREFIX)/bin/verilator: | repo/.git
 	(cd repo && \
 	autoconf && \
 	./configure --prefix=$(PREFIX) && \
-	make -j2 install) 2>&1 | tee build.log
+	make -j2 && \
+	make install) 2>&1 | tee build.log
 
 repo/.git:
 	git submodule update --init repo
