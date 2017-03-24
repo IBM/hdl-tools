@@ -1,8 +1,9 @@
 PREFIX ?= $(abspath ../opt)
 
-.PHONY: install
+.PHONY: all clean mrproper
 
-install:
+all: $(PREFIX)/bin/verilator
+
 $(PREFIX)/bin/verilator: | repo/.git
 	@echo "[INFO] Building Verilator"
 	@echo "[INFO] Verilator uses a lot of memory to build, limiting jobs to 2"

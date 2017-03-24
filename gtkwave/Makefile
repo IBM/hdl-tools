@@ -1,9 +1,9 @@
 PREFIX ?= $(abspath ../opt)
 
-.PHONY: all install
-all: install
+.PHONY: all
 
-install:
+all: $(PREFIX)/bin/gtkwave
+
 $(PREFIX)/bin/gtkwave: | repo
 	@echo "[INFO] Building GTKWave"
 	(cd repo && \
