@@ -4,6 +4,7 @@ PREFIX ?= $(abspath ../opt)
 
 all: $(PREFIX)/bin/verilator
 
+intall:
 $(PREFIX)/bin/verilator: | repo/.git
 	@echo "[INFO] Building Verilator"
 	@echo "[INFO] Verilator uses a lot of memory to build, limiting jobs to 2"
@@ -20,4 +21,4 @@ clean:
 	@(cd repo && make clean) >> build.log
 
 mrproper:
-	rm -rf repo
+	rm -rf repo && git checkout repo

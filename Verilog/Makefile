@@ -4,6 +4,7 @@ PREFIX ?= $(abspath ../opt)
 
 all: $(PREFIX)/lib/perl5/x86_64-linux-gnu-thread-multi/Verilog/Netlist.pm
 
+install:
 $(PREFIX)/lib/perl5/x86_64-linux-gnu-thread-multi/Verilog/Netlist.pm: | repo/.git
 	@echo "[INFO] Building Verilog::Perl"
 	(cd repo && \
@@ -13,3 +14,6 @@ $(PREFIX)/lib/perl5/x86_64-linux-gnu-thread-multi/Verilog/Netlist.pm: | repo/.gi
 
 repo/.git:
 	git submodule update --init repo
+
+mrproper:
+	rm -rf repo && git checkout repo

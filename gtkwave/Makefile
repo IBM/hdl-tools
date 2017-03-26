@@ -4,6 +4,7 @@ PREFIX ?= $(abspath ../opt)
 
 all: $(PREFIX)/bin/gtkwave
 
+install:
 $(PREFIX)/bin/gtkwave: | repo
 	@echo "[INFO] Building GTKWave"
 	(cd repo && \
@@ -12,3 +13,6 @@ $(PREFIX)/bin/gtkwave: | repo
 
 repo:
 	svn co "svn://svn.code.sf.net/p/gtkwave/code/gtkwave3" $@
+
+mrproper:
+	rm -rf repo

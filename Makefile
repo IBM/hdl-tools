@@ -31,7 +31,8 @@ clean-installed: ## remove the installed tools in ./opt
 	rm -rf $(base_dir)/opt
 
 clean-downloaded: ## blow away program source directories
-	rm -rf $(base_dir)/verilator/repo
-	rm -rf $(base_dir)/gtkwave/repo
+	$(MAKE) -C $(base_dir)/verilator mrproper
+	$(MAKE) -C $(base_dir)/gtkwave mrproper
+	$(MAKE) -C $(base_dir)/Verilog mrproper
 
 mrproper: clean-installed clean-downloaded ## remote tools and blow away download sources
