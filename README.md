@@ -1,4 +1,4 @@
-HDL Tools
+HDL Tools [![Build Status](https://travis-ci.org/IBM/hdl-tools.svg?branch=master)](https://travis-ci.org/IBM/hdl-tools)
 =====================
 
 Environment for working with HDLs. This builds a number of tools from source and relies on some scripts to facilitate HDL work.
