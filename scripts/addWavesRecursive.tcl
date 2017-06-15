@@ -1,4 +1,4 @@
-# See LICENSE.IBM for license details.
+# See LICENSE for license details.
 
 # TCL srcipt that uses the TCL-enabled version of GTKWave to generate
 # a .gtkw save file with all the signals and groups found in a .vcd

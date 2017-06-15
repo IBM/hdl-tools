@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# See LICENSE.IBM for license details.
+# See LICENSE for license details.
 
 use strict;
 use warnings;

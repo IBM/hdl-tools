@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# See LICENSE.IBM for license details.
+# See LICENSE for license details.
 
 # Helper script that launches GTKWave for a specific [vcd-file] using
 # scripts/addWavesRecursive.tcl to populate the waveform window with
