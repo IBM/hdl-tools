@@ -29,7 +29,7 @@ Perl tools for working with Verilog netlists.
 ## Scripts
 
 #### [`addWavesRecursive.tcl`](scripts/addWavesRecursive.tcl)
-TCL script that, when passed to GTKWave, will generate a saved waveform view (a .gtkw file) that has all the signals in a given VCD file grouped by module. An example invocation would be:
+TCL script that, when passed to GTKWave, will generate a saved waveform view (a `.gtkw` file) that has all the signals in a given VCD file grouped by module. An example invocation would be:
 
 ```
 gtkwave -S addWavesRecursive.tcl dump.vcd > dump.gtkw
@@ -44,7 +44,7 @@ gtkwave dump.vcd dump.gtkw
 After 904555632a5131686c20921593ba7010efece916, this is `O(n log n)` in the number of signals. Previously, this was `O(n^2)`.
 
 #### [`vcd-prune`](scripts/vcd-prune)
-Perl script to prune a VCD file to only include specific modules (and all their submodules. An example invocation would be:
+Perl script to prune a VCD file to only include specific modules (and all their submodules). An example invocation would be:
 
 ```
 ./vcd-prune dump.vcd -m MyModule -o dump-short.vcd
