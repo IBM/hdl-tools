@@ -7,7 +7,7 @@
 # signals grouped by module.
 
 usage () {
-    echo "Usage: $0 [vcd-file]"
+    echo "Usage: $0 [vcd-file]" >&2
 }
 
 base_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/..
@@ -22,7 +22,7 @@ if [ ! -f $base_dir/opt/bin/gtkwave ]; then
     make -C $base_dir gtkwave;
 fi;
 
-echo "[INFO] Preprocessing $1 to generate $1.gtkw"
+echo "[INFO] Preprocessing $1 to generate $1.gtkw" >&2
 time $ENV gtkwave -g -S $base_dir/scripts/addWavesRecursive.tcl $1 > $1.gtkw
-echo "[INFO] Launching graphical GTKWave..."
+echo "[INFO] Launching graphical GTKWave..." >&2
 $ENV gtkwave -g $1 $1.gtkw
