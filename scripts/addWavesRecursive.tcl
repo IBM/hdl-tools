@@ -161,6 +161,10 @@ set dmt      [ gtkwave::getDumpType     ]
 # puts "\[savefile\]"
 # puts "\[timestart\] 0"
 
+# Keep the SST pane (left pane) collapsed as all signals are already
+# included
+puts "\[sst_expanded\] 0"
+
 # Get a list of all the signals in the design that are not "generated"
 # or "temporary".
 puts stderr "\[INFO\] Reading all signals in design"
