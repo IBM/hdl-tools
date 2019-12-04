@@ -167,7 +167,7 @@ puts stderr "\[INFO\] Reading all signals in design"
 set signals [list]
 for {set i 0} {$i < $nfacs } {incr i} {
     set facname [ gtkwave::getFacName $i ]
-    if {![regexp {^.*\.(GEN|T)_.*} $facname]} {
+    if {![regexp {^.*\._(GEN|T).*} $facname]} {
         lappend signals "$facname"
     }
 }
