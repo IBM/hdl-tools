@@ -1,7 +1,6 @@
 git:
   submodules: false
 language: generic
-sudo: false
 dist: trusty
 
 script:
